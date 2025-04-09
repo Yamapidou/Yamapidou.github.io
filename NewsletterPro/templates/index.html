@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Système de Gestion LSPD</title>
+    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+    <script>tailwind.config={theme:{extend:{colors:{primary:'#4f46e5',secondary:'#6b7280'},borderRadius:{'none':'0px','sm':'4px',DEFAULT:'8px','md':'12px','lg':'16px','xl':'20px','2xl':'24px','3xl':'32px','full':'9999px','button':'8px'}}}}</script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&family=Pacifico&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <!-- Login Modal -->
+    <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+            <div class="p-6 border-b">
+                <h3 class="text-xl font-semibold">Connexion</h3>
+            </div>
+            <div class="p-6">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nom d'utilisateur</label>
+                        <input type="text" id="username" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Mot de passe</label>
+                        <div class="relative">
+                            <input type="password" id="password" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary pr-10">
+                            <button id="togglePassword" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700">
+                                <i class="ri-eye-off-line"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <input type="checkbox" id="remember" class="custom-checkbox">
+                            <label for="remember" class="ml-2 text-sm text-gray-600">Se souvenir de moi</label>
+                        </div>
+                        <a href="#" class="text-sm text-primary hover:underline">Mot de passe oublié ?</a>
+                    </div>
+                </div>
+            </div>
+            <div class="p-6 bg-gray-50 flex justify-end">
+                <button id="loginBtn" class="px-4 py-2 bg-primary text-white rounded-button text-sm whitespace-nowrap flex items-center gap-2">
+                    Se connecter
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="min-h-screen flex flex-col">
+        <!-- Header with Timer -->
+        <header class="bg-white shadow-sm py-4 px-6">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-2">
+                        <button id="timerBtn" class="w-12 h-12 flex items-center justify-center bg-primary text-white rounded-full shadow-md hover:bg-opacity-90 transition-all">
+                            <div class="w-12 h-12 flex items-center justify-center">
+                                <i class="ri-play-fill ri-lg"></i>
+                            </div>
+                        </button>
+                        <div class="timer-display text-xl font-semibold" id="timer">00:00:00</div>
+                    </div>
+                </div>
+                <div class="w-24 h-8">
+                    <img src="https://public.readdy.ai/ai/img_res/7e74a4953cf8ed522ba68ebe0e51a4a2.jpg" alt="LSPD Logo" class="w-full h-full object-contain">
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="text-sm text-gray-500">
+                        <span id="currentDate">08/04/2025</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-grow p-6">
+            <!-- Tab Navigation -->
+            <div class="mb-6 border-b">
+                <div class="flex space-x-8">
+                    <button id="casiers-tab" class="py-2 px-1 text-gray-500 hover:text-primary tab-active" onclick="changeTab('casiers')">Casiers</button>
+                    <button id="rapports-tab" class="py-2 px-1 text-gray-500 hover:text-primary" onclick="changeTab('rapports')">Rapports</button>
+                    <button id="amendes-tab" class="py-2 px-1 text-gray-500 hover:text-primary" onclick="changeTab('amendes')">Amendes</button>
+                    <button id="ppa-tab" class="py-2 px-1 text-gray-500 hover:text-primary" onclick="changeTab('ppa')">PPA</button>
+                    <button id="temps-tab" class="py-2 px-1 text-gray-500 hover:text-primary" onclick="changeTab('temps')">Temps</button>
+                </div>
+            </div>
+            
+            <!-- Casiers Section -->
+            <div id="casiers-content" class="mb-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold">Gestion des Casiers</h2>
+                    <button class="px-4 py-2 bg-primary text-white rounded-button text-sm flex items-center gap-2" onclick="openEditCasierModal()">
+                        <i class="ri-add-line"></i>
+                        Nouveau Casier
+                    </button>
+                </div>
+                
+                <!-- Search Bar -->
+                <div class="mb-6">
+                    <div class="relative">
+                        <input type="text" id="searchCasier" placeholder="Rechercher un casier..." class="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary">
+                        <div class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                            <i class="ri-search-line"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Casiers List -->
+                <div id="casiersList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+            
+            <!-- Rapports Section -->
+            <div id="rapports-content" class="mb-6 hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold">Gestion des Rapports</h2>
+                    <button class="px-4 py-2 bg-primary text-white rounded-button text-sm flex items-center gap-2" onclick="openEditRapportModal()">
+                        <i class="ri-add-line"></i>
+                        Nouveau Rapport
+                    </button>
+                </div>
+                
+                <!-- Search Bar -->
+                <div class="mb-6">
+                    <div class="relative">
+                        <input type="text" id="searchRapport" placeholder="Rechercher un rapport..." class="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary">
+                        <div class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                            <i class="ri-search-line"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Rapports List -->
+                <div id="rapportsList" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+            
+            <!-- Amendes Section -->
+            <div id="amendes-content" class="mb-6 hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold">Gestion des Amendes</h2>
+                    <button class="px-4 py-2 bg-primary text-white rounded-button text-sm flex items-center gap-2" onclick="openEditAmendeModal()">
+                        <i class="ri-add-line"></i>
+                        Nouvelle Amende
+                    </button>
+                </div>
+                
+                <!-- Search Bar -->
+                <div class="mb-6">
+                    <div class="relative">
+                        <input type="text" id="searchAmende" placeholder="Rechercher une amende..." class="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary">
+                        <div class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                            <i class="ri-search-line"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Amendes List -->
+                <div id="amendesList" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+            
+            <!-- PPA Section -->
+            <div id="ppa-content" class="mb-6 hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold">Gestion des PPA</h2>
+                    <button class="px-4 py-2 bg-primary text-white rounded-button text-sm flex items-center gap-2" onclick="openEditPPAModal()">
+                        <i class="ri-add-line"></i>
+                        Nouveau PPA
+                    </button>
+                </div>
+                
+                <!-- Search Bar -->
+                <div class="mb-6">
+                    <div class="relative">
+                        <input type="text" id="searchPPA" placeholder="Rechercher un PPA..." class="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary">
+                        <div class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                            <i class="ri-search-line"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- PPA List -->
+                <div id="ppaList" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="ri-shield-check-line text-4xl mb-2"></i>
+                        <p>Aucun PPA trouvé</p>
+                        <button class="mt-4 px-4 py-2 bg-primary text-white rounded-button text-sm" onclick="openEditPPAModal()">
+                            Créer un PPA
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Temps Section -->
+            <div id="temps-content" class="mb-6 hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold">Historique des sessions de chronomètre</h2>
+                </div>
+                
+                <!-- Sessions List -->
+                <div id="timerSessionsList" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="ri-time-line text-4xl mb-2"></i>
+                        <p>Aucune session enregistrée</p>
+                        <p class="text-sm mt-2">Utilisez le chronomètre en haut de la page pour enregistrer vos sessions de temps</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-white shadow-sm py-4 px-6 mt-auto">
+            <div class="flex justify-between items-center">
+                <div class="text-sm text-gray-500">
+                    Système de Gestion LSPD v1.0
+                </div>
+                <div class="text-sm text-gray-500">
+                    © 2025 Los Santos Police Department
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Edit Casier Modal -->
+    <div id="editCasierModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4">
+            <div class="p-6 border-b relative">
+                <h3 class="text-xl font-semibold">Modifier le Casier <span id="editCasierId" class="text-primary"></span></h3>
+                <button id="closeModalBtn" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700">
+                    <i class="ri-close-line ri-lg"></i>
+                </button>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nom Complet</label>
+                        <input type="text" id="editCasierNom" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Numéro de Téléphone</label>
+                        <input type="tel" id="editCasierTelephone" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Profession</label>
+                        <input type="text" id="editCasierProfession" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Date de Naissance</label>
+                        <input type="date" id="editCasierNaissance" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Adresse</label>
+                        <input type="text" id="editCasierAdresse" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Peine</label>
+                        <textarea id="editCasierPeine" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary" rows="2" placeholder="Détails des peines et infractions..."></textarea>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Photo</label>
+                        <div class="flex items-center gap-4">
+                            <div class="w-20 h-20 bg-gray-200 rounded-full overflow-hidden flex items-center justify-center shadow-sm transition-all duration-300" id="photoPreview">
+                                <div class="w-20 h-20 flex items-center justify-center">
+                                    <i class="ri-user-fill ri-xl text-gray-400"></i>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button class="px-3 py-1.5 border border-gray-300 rounded-button text-sm whitespace-nowrap flex items-center gap-1 hover:bg-gray-50 transition-all active:scale-95" id="uploadPhotoBtn" onclick="document.getElementById('photoInput').click()">
+                                    <div class="w-4 h-4 flex items-center justify-center">
+                                        <i class="ri-image-add-line"></i>
+                                    </div>
+                                    Télécharger une photo
+                                    <input type="file" id="photoInput" class="hidden" accept="image/*" onchange="handlePhotoUpload(this)">
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="p-6 bg-gray-50 flex justify-end">
+                <button id="saveCasierBtn" class="px-4 py-2 bg-primary text-white rounded-button text-sm whitespace-nowrap flex items-center gap-2">
+                    <i class="ri-save-line"></i>
+                    Enregistrer
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Amende Modal -->
+    <div id="editAmendeModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4">
+            <div class="p-6 border-b relative">
+                <h3 class="text-xl font-semibold">Amende <span id="editAmendeId" class="text-primary"></span></h3>
+                <button id="closeAmendeModalBtn" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700">
+                    <i class="ri-close-line ri-lg"></i>
+                </button>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Montant (€)</label>
+                        <input type="number" id="editAmendeMontant" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Date d'infraction</label>
+                        <input type="date" id="editAmendeDate" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Lieu</label>
+                        <input type="text" id="editAmendeLieu" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Casier associé</label>
+                        <select id="editAmendeCasier" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary">
+                            <option value="">Sélectionner un casier</option>
+                            <!-- Will be populated from API -->
+                        </select>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Motif de l'amende</label>
+                        <textarea id="editAmendeMotif" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary" rows="3" placeholder="Détails de l'infraction..."></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="p-6 bg-gray-50 flex justify-end">
+                <button id="saveAmendeBtn" class="px-4 py-2 bg-primary text-white rounded-button text-sm whitespace-nowrap flex items-center gap-2">
+                    <i class="ri-save-line"></i>
+                    Enregistrer
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Edit Rapport Modal -->
+    <div id="editRapportModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4">
+            <div class="p-6 border-b relative">
+                <h3 class="text-xl font-semibold">Rapport <span id="editRapportId" class="text-primary"></span></h3>
+                <button id="closeRapportModalBtn" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700">
+                    <i class="ri-close-line ri-lg"></i>
+                </button>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Titre</label>
+                        <input type="text" id="editRapportTitre" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Date de l'incident</label>
+                        <input type="date" id="editRapportDate" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Lieu</label>
+                        <input type="text" id="editRapportLieu" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Casier associé</label>
+                        <select id="editRapportCasier" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary">
+                            <option value="">Sélectionner un casier</option>
+                            <!-- Will be populated from API -->
+                        </select>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Contenu du rapport</label>
+                        <textarea id="editRapportContenu" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary" rows="5" placeholder="Détails de l'incident..."></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="p-6 bg-gray-50 flex justify-end">
+                <button id="saveRapportBtn" class="px-4 py-2 bg-primary text-white rounded-button text-sm whitespace-nowrap flex items-center gap-2">
+                    <i class="ri-save-line"></i>
+                    Enregistrer
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit PPA Modal -->
+    <div id="editPPAModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4">
+            <div class="p-6 border-b relative">
+                <h3 class="text-xl font-semibold">Permis Port d'Arme <span id="editPPAId" class="text-primary"></span></h3>
+                <button id="closePPAModalBtn" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700">
+                    <i class="ri-close-line ri-lg"></i>
+                </button>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <!-- Personne concernée -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Personne concernée</label>
+                        <input type="text" id="editPPAPersonne" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary" placeholder="Nom complet">
+                    </div>
+                    
+                    <!-- Heure -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Heure</label>
+                        <input type="time" id="editPPAHeure" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary">
+                    </div>
+                    
+                    <!-- Casier associé -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Casier associé</label>
+                        <select id="editPPACasier" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary">
+                            <option value="">Sélectionner un casier</option>
+                            <!-- Will be populated from API -->
+                        </select>
+                    </div>
+                    
+                    <!-- Test psychologique -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Test psychologique</label>
+                        <div class="flex items-center gap-2">
+                            <button type="button" class="px-3 py-2 border border-gray-300 rounded-button text-sm transition-all flex-1 test-status" data-status="attente">
+                                En attente
+                            </button>
+                            <button type="button" class="px-3 py-2 border border-gray-300 rounded-button text-sm transition-all flex-1 test-status" data-status="valide">
+                                Validé
+                            </button>
+                            <button type="button" class="px-3 py-2 border border-gray-300 rounded-button text-sm transition-all flex-1 test-status" data-status="refuse">
+                                Refusé
+                            </button>
+                        </div>
+                        <input type="hidden" id="editPPATestPsy" value="attente">
+                    </div>
+                    
+                    <!-- Date du test psychologique -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Date du test psychologique</label>
+                        <input type="date" id="editPPADateTestPsy" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary">
+                    </div>
+                    
+                    <!-- Matricule agent -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Matricule de l'agent</label>
+                        <input type="text" id="editPPAMatricule" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary">
+                    </div>
+                    
+                    <!-- Modèle d'arme -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Modèle de l'arme</label>
+                        <input type="text" id="editPPAModeleArme" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary">
+                    </div>
+                    
+                    <!-- Nombre de munitions -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nombre de munitions</label>
+                        <input type="number" id="editPPAMunitions" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary">
+                    </div>
+                </div>
+            </div>
+            <div class="p-6 bg-gray-50 flex justify-end">
+                <button id="savePPABtn" class="px-4 py-2 bg-primary text-white rounded-button text-sm whitespace-nowrap flex items-center gap-2">
+                    <i class="ri-save-line"></i>
+                    Enregistrer
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Files -->
+    <script src="{{ url_for('static', filename='js/utils.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/timer.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/timer-sessions.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/casier.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/amende.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/rapport.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/ppa.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/tabs.js') }}"></script>
+    <script>
+        // Initialize application on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Update current date
+            updateCurrentDate();
+            
+            // Render casiers list
+            renderCasiersList();
+        });
+    </script>
+</body>
+</html>

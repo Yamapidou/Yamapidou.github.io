@@ -1,0 +1,77 @@
+:where([class^="ri-"])::before { content: "\f3c2"; }
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f9fafb;
+}
+.timer-display {
+    font-family: 'Roboto Mono', monospace;
+}
+.note-area {
+    min-height: 200px;
+}
+.custom-checkbox {
+    appearance: none;
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 2px solid #d1d5db;
+    border-radius: 4px;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.custom-checkbox:checked {
+    background-color: #4f46e5;
+    border-color: #4f46e5;
+}
+.custom-checkbox:checked::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 0.5rem;
+    height: 0.5rem;
+    background-color: white;
+    border-radius: 1px;
+}
+.tab-active {
+    color: #4f46e5;
+    border-bottom: 2px solid #4f46e5;
+}
+/* Notification styles */
+@keyframes slideIn {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+}
+@keyframes slideOut {
+    from { transform: translateX(0); }
+    to { transform: translateX(100%); }
+}
+.notification-enter {
+    animation: slideIn 0.3s forwards;
+}
+.notification-exit {
+    animation: slideOut 0.3s forwards;
+}
+/* Animation pour les modals */
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+.animate-fade-in {
+    animation: fadeIn 0.2s ease-out forwards;
+}
+
+/* Animation pour les nouveaux rapports */
+@keyframes highlightNew {
+    0% { background-color: #f9fafb; }
+    20% { background-color: #edf8ff; }
+    40% { background-color: #e5f2ff; }
+    60% { background-color: #ddf0ff; }
+    80% { background-color: #e5f2ff; }
+    100% { background-color: #f9fafb; }
+}
+.highlight-new {
+    animation: highlightNew 2s ease-in-out;
+    border-left: 3px solid #4f46e5;
+}
